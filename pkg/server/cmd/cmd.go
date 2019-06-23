@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/twitchyliquid64/subnet/subnet"
@@ -12,14 +13,12 @@ import (
 )
 
 const (
-	caCertPath = "ca.crt"
-	caKeyPath  = "ca.key"
-
-	serverCertPath = "server.crt"
-	serverKeyPath  = "server.key"
-
-	clientCertPath = "client.crt"
-	clientKeyPath  = "client.key"
+	caCert     = "ca.crt"
+	caKey      = "ca.key"
+	serverCert = "server.crt"
+	serverKey  = "server.key"
+	clientCert = "client.crt"
+	clientKey  = "client.key"
 
 	listenAddr = "0.0.0.0"
 	listenPort = "3234"
@@ -35,6 +34,13 @@ type Command struct {
 
 	tempDir string
 	server  *subnet.Server
+
+	caCertPath     string
+	caKeyPath      string
+	serverCertPath string
+	serverKeyPath  string
+	clientCertPath string
+	clientKeyPath  string
 }
 
 // New returns a new Command object.
@@ -86,14 +92,18 @@ func (c *Command) ensureTempDir() (err error) {
 }
 
 func (c *Command) ensureCerts() error {
-	if err := cert.MakeServerCert(serverCertPath, serverKeyPath, caCertPath, caKeyPath); err != nil {
+	c.caCertPath, c.caKeyPath = filepath.Join(c.tempDir, caCert), filepath.Join(c.tempDir, caKey)
+	c.serverCertPath, c.serverKeyPath = filepath.Join(c.tempDir, serverCert), filepath.Join(c.tempDir, serverKey)
+	c.clientCertPath, c.clientKeyPath = filepath.Join(c.tempDir, clientCert), filepath.Join(c.tempDir, clientKey)
+
+	if err := cert.MakeServerCert(c.serverCertPath, c.serverKeyPath, c.caCertPath, c.caKeyPath); err != nil {
 		return err
 	}
-	return cert.IssueClientCert(caCertPath, caKeyPath, clientCertPath, clientKeyPath)
+	return cert.IssueClientCert(c.caCertPath, c.caKeyPath, c.clientCertPath, c.clientKeyPath)
 }
 
 func (c *Command) runServer() (err error) {
-	c.server, err = subnet.NewServer(listenAddr, listenPort, c.Network, c.IName, serverCertPath, serverKeyPath, caCertPath)
+	c.server, err = subnet.NewServer(listenAddr, listenPort, c.Network, c.IName, c.serverCertPath, c.serverKeyPath, c.caCertPath)
 	if err != nil {
 		return err
 	}
