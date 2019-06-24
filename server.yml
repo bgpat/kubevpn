@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vpn
+spec:
+  containers:
+  - image: bgpat/kubevpn:0.1.0
+    imagePullPolicy: Always
+    name: vpn
+    volumeMounts:
+    - mountPath: /dev/net/tun
+      name: tun
+      readOnly: true
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+  restartPolicy: Never
+  volumes:
+  - name: tun
+    hostPath:
+      path: /dev/net/tun
+      type: CharDevice
